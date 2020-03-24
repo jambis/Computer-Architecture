@@ -7,7 +7,9 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.reg = [0] * 8
+        self.ram = [0] * 256
+        self.pc = 0
 
     def load(self):
         """Load a program into memory."""
@@ -60,6 +62,31 @@ class CPU:
 
         print()
 
+    def ram_read(self, MAR):
+        return self.ram[MAR]
+
+    def ram_write(self, MDR, MAR):
+        self.ram[MAR] = MDR
+
     def run(self):
         """Run the CPU."""
-        pass
+        running = True
+        
+        while running:
+            IR = self.ram_read(self.pc)
+            
+            if IR == 130:
+                self.reg[self.ram_read(self.pc + 1)] = self.ram_read(self.pc + 2)
+                self.pc += 3
+            
+            elif IR == 71:
+                print(self.reg[self.ram_read(self.pc + 1)])
+                self.pc += 2
+            
+            elif IR == 1:
+                running = False
+            
+            else:
+                print("Instruction not understood")
+                sys.exit(1)
+
