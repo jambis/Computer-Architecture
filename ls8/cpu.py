@@ -20,6 +20,9 @@ class CPU:
         self.branchtable[162] = self.mul
         self.branchtable[69] = self.push
         self.branchtable[70] = self.pop
+        self.branchtable[160] = self.mul2
+        self.branchtable[17] = self.ret
+        self.branchtable[80] = self.call
 
 
     def load(self, file_path):
@@ -82,9 +85,10 @@ class CPU:
         self.alu("MUL", self.ram_read(self.pc+1), self.ram_read(self.pc+2)) 
         self.pc +=3
 
-    def push(self):
+    def push(self, value = None):
         self.reg[self.sp] -= 1
-        value = self.reg[self.ram_read(self.pc + 1)]
+        if not value:
+            value = self.reg[self.ram_read(self.pc + 1)]        
         # print("VALUE: ", value)
         self.ram_write(value ,self.reg[self.sp])
         self.pc += 2
@@ -96,13 +100,28 @@ class CPU:
         self.reg[self.sp] += 1
         self.pc += 2
 
+    def call(self):
+        new_pc = self.reg[self.ram_read(self.pc+1)]
+        self.push(self.pc + 2)
+        self.pc = new_pc
+        
+
+    def mul2(self):
+        self.alu("ADD", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+        self.pc += 3
+
+    def ret(self):
+        self.pc = self.ram_read(self.reg[self.sp])
+        self.reg[self.sp] += 1
+
     def run(self):
         """Run the CPU."""
         running = True
         
         while running:
             IR = self.ram_read(self.pc)
-            # print(IR)    
+            # print(IR) 
+            # print("PC: ",self.pc)   
             if IR == 1:
                 running = False
             
