@@ -7,31 +7,31 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.reg = [0] * 8
-        self.ram = [0] * 256
-        self.pc = 0
+        self.reg = [0] * 8      # Register
+        self.ram = [0] * 256    # RAM
+        
+        self.pc = 0             # Program counter
+        self.sp = 7             # Stack pointer index in the register
+        self.reg[self.sp] = 244 # Stack pointer 
 
-    def load(self):
+        self.branchtable = {}   #Branch table
+        self.branchtable[130] = self.LDI
+        self.branchtable[71] = self.prnt
+        self.branchtable[162] = self.mul
+        self.branchtable[69] = self.push
+        self.branchtable[70] = self.pop
+
+
+    def load(self, file_path):
         """Load a program into memory."""
 
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
-
+        program = open(file_path, "r")
+                        
+        for line in program:
+            if line[:8][0] == "0" or line[:8][0] == "1":
+                self.ram[address] = int(line[:8],2)
+                address += 1
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -39,6 +39,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         #elif op == "SUB": etc
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -68,24 +70,45 @@ class CPU:
     def ram_write(self, MDR, MAR):
         self.ram[MAR] = MDR
 
+    def LDI(self):
+        self.reg[self.ram_read(self.pc + 1)] = self.ram_read(self.pc + 2)
+        self.pc += 3
+
+    def prnt(self):
+        print(self.reg[self.ram_read(self.pc + 1)])
+        self.pc += 2
+
+    def mul(self):
+        self.alu("MUL", self.ram_read(self.pc+1), self.ram_read(self.pc+2)) 
+        self.pc +=3
+
+    def push(self):
+        self.reg[self.sp] -= 1
+        value = self.reg[self.ram_read(self.pc + 1)]
+        # print("VALUE: ", value)
+        self.ram_write(value ,self.reg[self.sp])
+        self.pc += 2
+
+    def pop(self):
+        value = self.ram_read(self.reg[self.sp])
+        reg_position = self.ram_read(self.pc + 1)
+        self.reg[reg_position] = value
+        self.reg[self.sp] += 1
+        self.pc += 2
+
     def run(self):
         """Run the CPU."""
         running = True
         
         while running:
             IR = self.ram_read(self.pc)
-            
-            if IR == 130:
-                self.reg[self.ram_read(self.pc + 1)] = self.ram_read(self.pc + 2)
-                self.pc += 3
-            
-            elif IR == 71:
-                print(self.reg[self.ram_read(self.pc + 1)])
-                self.pc += 2
-            
-            elif IR == 1:
+            # print(IR)    
+            if IR == 1:
                 running = False
             
+            elif IR in self.branchtable:
+                self.branchtable[IR]()
+                
             else:
                 print("Instruction not understood")
                 sys.exit(1)
