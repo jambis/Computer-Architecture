@@ -11,7 +11,8 @@ class CPU:
         self.ram = [0] * 256    # RAM
         
         self.pc = 0             # Program counter
-        self.sp = 244           # Stack pointer
+        self.sp = 7             # Stack pointer index in the register
+        self.reg[self.sp] = 244 # Stack pointer 
 
         self.branchtable = {}   #Branch table
         self.branchtable[130] = self.LDI
@@ -82,17 +83,17 @@ class CPU:
         self.pc +=3
 
     def push(self):
-        self.sp -= 1
+        self.reg[self.sp] -= 1
         value = self.reg[self.ram_read(self.pc + 1)]
         # print("VALUE: ", value)
-        self.ram_write(value ,self.sp)
+        self.ram_write(value ,self.reg[self.sp])
         self.pc += 2
 
     def pop(self):
-        value = self.ram_read(self.sp)
+        value = self.ram_read(self.reg[self.sp])
         reg_position = self.ram_read(self.pc + 1)
         self.reg[reg_position] = value
-        self.sp += 1
+        self.reg[self.sp] += 1
         self.pc += 2
 
     def run(self):
